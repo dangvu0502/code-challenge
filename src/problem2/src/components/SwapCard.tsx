@@ -6,10 +6,9 @@ import { TokenInputSection } from "./TokenInputSection";
 import { ExchangeRateDisplay } from "./ExchangeRateDisplay";
 import { SwapButton } from "./SwapButton";
 import { useSwapForm } from "@/hooks/useSwapForm";
-import { useExchangeRate } from "@/hooks/useExchangeRate";
 import { useTokenAutoSelect } from "@/hooks/useTokenAutoSelect";
 import { useSwapExecution } from "@/hooks/useSwapExecution";
-import { calculateExchangeAmount, formatAmountForDisplay } from "@/lib/precision";
+import { calculateExchangeAmount, formatAmountForDisplay, calculateExchangeRate } from "@/lib/precision";
 
 interface SwapCardProps {
   tokens: EnrichedToken[];
@@ -30,12 +29,13 @@ export const SwapCard = ({ tokens }: SwapCardProps) => {
     isValid,
   } = useSwapForm();
 
-  const { exchangeRate } = useExchangeRate(
-    formData.fromToken,
-    formData.toToken
-  );
+  const { isLoading, executeSwap } = useSwapExecution();
   
-  // Calculate toAmount based on exchange rate using precise arithmetic
+  const exchangeRate = formData.fromToken && formData.toToken && 
+    formData.fromToken.price > 0 && formData.toToken.price > 0
+    ? calculateExchangeRate(formData.fromToken.price, formData.toToken.price)
+    : null;
+  
   const toAmount = formData.fromAmount && exchangeRate && formData.fromToken && formData.toToken
     ? formatAmountForDisplay(
         calculateExchangeAmount(
@@ -47,7 +47,6 @@ export const SwapCard = ({ tokens }: SwapCardProps) => {
       )
     : '';
 
-  const { isLoading, executeSwap } = useSwapExecution();
 
   const handleFromAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formattedValue = handleAmountChange(e.target.value);
