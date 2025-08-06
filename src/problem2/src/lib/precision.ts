@@ -107,7 +107,7 @@ export function validateAmount(amount: string, decimals: number): {
     if (bn.isGreaterThan('1e12')) {
       return { isValid: false, error: 'Amount too large' };
     }
-    
+
     if (bn.isNegative()) {
       return { isValid: false, error: 'Amount cannot be negative' };
     }
