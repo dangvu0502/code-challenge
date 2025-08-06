@@ -1,14 +1,17 @@
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { EnrichedToken } from "@/types/swap";
+import type { EnrichedToken, SwapTransaction } from "@/types/swap";
 import { TokenInputSection } from "./TokenInputSection";
 import { ExchangeRateDisplay } from "./ExchangeRateDisplay";
 import { SwapButton } from "./SwapButton";
 import { useSwapForm } from "@/hooks/useSwapForm";
 import { useTokenAutoSelect } from "@/hooks/useTokenAutoSelect";
 import { useSwapExecution } from "@/hooks/useSwapExecution";
-import { calculateExchangeAmount, formatAmountForDisplay, calculateExchangeRate } from "@/lib/precision";
+import {
+  calculateExchangeAmount,
+  calculateExchangeRate,
+} from "@/lib/precision";
 
 interface SwapCardProps {
   tokens: EnrichedToken[];
@@ -17,54 +20,52 @@ interface SwapCardProps {
 export const SwapCard = ({ tokens }: SwapCardProps) => {
   const {
     formData,
+    isValid,
     updateFromToken,
     updateToToken,
     updateFromAmount,
     swapTokens,
-    resetAmounts,
     setTokens,
-    validateForm,
     handleAmountChange,
     handleKeyDown,
-    isValid,
   } = useSwapForm();
 
-  const { isLoading, executeSwap } = useSwapExecution();
-  
-  const exchangeRate = formData.fromToken && formData.toToken && 
-    formData.fromToken.price > 0 && formData.toToken.price > 0
-    ? calculateExchangeRate(formData.fromToken.price, formData.toToken.price)
-    : null;
-  
-  const toAmount = formData.fromAmount && exchangeRate && formData.fromToken && formData.toToken
-    ? formatAmountForDisplay(
-        calculateExchangeAmount(
-          formData.fromAmount,
-          formData.fromToken.price,
-          formData.toToken.price,
-        ),
-        formData.toToken.decimals
-      )
-    : '';
+  const { fromToken, toToken, fromAmount } = formData;
 
+  // Auto-select first two tokens
+  useTokenAutoSelect(tokens, !!fromToken, !!toToken, setTokens);
+
+  const { isLoading, executeSwap } = useSwapExecution();
+
+  const canCalculateExchange =
+    fromToken && toToken && fromToken.price > 0 && toToken.price > 0;
+
+  const exchangeRate = canCalculateExchange
+    ? calculateExchangeRate(fromToken.price, toToken.price)
+    : null;
+
+  const toAmount =
+    canCalculateExchange && fromAmount
+      ? calculateExchangeAmount(fromAmount, fromToken.price, toToken.price)
+      : "";
 
   const handleFromAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formattedValue = handleAmountChange(e.target.value);
-    updateFromAmount(formattedValue);
+    handleAmountChange(e.target.value);
   };
 
   const handleSwap = async () => {
-    await executeSwap(formData, validateForm(), resetAmounts);
+    if (!isValid) return;
+
+    await executeSwap(
+      {
+        fromToken,
+        toToken,
+        fromAmount,
+        toAmount,
+      } as SwapTransaction,
+      () => updateFromAmount("")
+    );
   };
-
-  // Auto-select first two tokens
-  useTokenAutoSelect(
-    tokens,
-    !!formData.fromToken,
-    !!formData.toToken,
-    setTokens
-  );
-
 
   return (
     <Card className="glass-card w-full max-w-md mx-auto pulse-glow border-2">
@@ -81,8 +82,8 @@ export const SwapCard = ({ tokens }: SwapCardProps) => {
         {/* From Token Section */}
         <TokenInputSection
           label="From"
-          token={formData.fromToken}
-          amount={formData.fromAmount}
+          token={fromToken}
+          amount={fromAmount}
           onTokenSelect={updateFromToken}
           onAmountChange={handleFromAmountChange}
           onKeyDown={handleKeyDown}
@@ -105,7 +106,7 @@ export const SwapCard = ({ tokens }: SwapCardProps) => {
         {/* To Token Section */}
         <TokenInputSection
           label="To"
-          token={formData.toToken}
+          token={toToken}
           amount={toAmount}
           onTokenSelect={updateToToken}
           tokens={tokens}
@@ -115,8 +116,8 @@ export const SwapCard = ({ tokens }: SwapCardProps) => {
         {/* Exchange Rate Info */}
         <ExchangeRateDisplay
           exchangeRate={exchangeRate}
-          fromToken={formData.fromToken}
-          toToken={formData.toToken}
+          fromToken={fromToken}
+          toToken={toToken}
         />
 
         {/* Swap Button */}

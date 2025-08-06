@@ -66,59 +66,6 @@ export function calculateExchangeRate(fromPrice: number, toPrice: number): strin
 }
 
 /**
- * Validate amount string for a specific token
- * @param amount Amount string to validate
- * @param decimals Maximum decimal places allowed
- * @returns Validation result
- */
-export function validateAmount(amount: string, decimals: number): {
-  isValid: boolean;
-  error?: string;
-} {
-  if (!amount || amount === '') {
-    return { isValid: true };
-  }
-  
-  // Check for valid number format
-  if (!/^\d*\.?\d*$/.test(amount)) {
-    return { isValid: false, error: 'Invalid number format' };
-  }
-  
-  // Check for multiple decimal points
-  const parts = amount.split('.');
-  if (parts.length > 2) {
-    return { isValid: false, error: 'Multiple decimal points' };
-  }
-  
-  // Check decimal places
-  if (parts[1] && parts[1].length > decimals) {
-    return { isValid: false, error: `Maximum ${decimals} decimal places allowed` };
-  }
-  
-  // Check if it's a valid BigNumber
-  try {
-    const bn = new BigNumber(amount);
-    if (bn.isNaN() || !bn.isFinite()) {
-      return { isValid: false, error: 'Invalid number' };
-    }
-    
-    // Check for reasonable value (prevent overflow)
-    // Max supply of Bitcoin is 21 million, so 1e12 is a reasonable upper limit for any token
-    if (bn.isGreaterThan('1e12')) {
-      return { isValid: false, error: 'Amount too large' };
-    }
-
-    if (bn.isNegative()) {
-      return { isValid: false, error: 'Amount cannot be negative' };
-    }
-  } catch {
-    return { isValid: false, error: 'Invalid amount' };
-  }
-  
-  return { isValid: true };
-}
-
-/**
  * Sanitize user input for amount fields
  * @param input Raw user input
  * @param decimals Maximum decimal places allowed

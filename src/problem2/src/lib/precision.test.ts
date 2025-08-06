@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import BigNumber from 'bignumber.js';
 import {
   calculateExchangeAmount,
-  validateAmount,
   sanitizeAmountInput
 } from './precision';
 
@@ -29,20 +28,6 @@ describe('Precision Library', () => {
       const diff = originalBN.minus(revertedBN).abs();
       
       expect(diff.isLessThan('1e-25')).toBe(true);
-    });
-  });
-
-  describe('validateAmount', () => {
-    it('should validate basic valid amounts', () => {
-      expect(validateAmount('123.456', 18).isValid).toBe(true);
-    });
-
-    it('should reject invalid number formats', () => {
-      expect(validateAmount('abc', 18).isValid).toBe(false);
-    });
-
-    it('should enforce decimal place limits', () => {
-      expect(validateAmount('1.12345', 3).isValid).toBe(false);
     });
   });
 

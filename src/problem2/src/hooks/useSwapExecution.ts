@@ -1,20 +1,19 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/useToast';
-import type { SwapFormData } from '@/types/swap';
+import type { SwapTransaction } from '@/types/swap';
 
 export const useSwapExecution = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const executeSwap = async (
-    formData: SwapFormData,
-    validationError: string | null,
-    onSuccess: () => void
+    params: SwapTransaction,
+    onSuccess?: () => void
   ) => {
-    if (validationError) {
+    if (!params) {
       toast({
         title: 'Invalid Input',
-        description: validationError,
+        description: 'Please check your input and try again',
         variant: 'destructive',
       });
       return;
@@ -28,11 +27,11 @@ export const useSwapExecution = () => {
 
       toast({
         title: 'Swap Successful!',
-        description: `Swapped ${formData.fromAmount} ${formData.fromToken?.currency} for ${formData.toAmount} ${formData.toToken?.currency}`,
+        description: `Swapped ${params.fromAmount} ${params.fromToken.currency} for ${params.toAmount} ${params.toToken.currency}`,
         variant: 'default',
       });
 
-      onSuccess();
+      onSuccess?.();
     } catch {
       toast({
         title: 'Swap Failed',

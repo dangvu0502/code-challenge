@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import type { SwapFormData, EnrichedToken } from '@/types/swap';
-import { validateAmount, sanitizeAmountInput } from '@/lib/precision';
+import { DEFAULT_DECIMALS, sanitizeAmountInput } from '@/lib/precision';
 
 export const useSwapForm = () => {
   const [formData, setFormData] = useState<SwapFormData>({
     fromToken: null,
     toToken: null,
     fromAmount: '',
-    toAmount: '',
   });
 
   const updateFromToken = (token: EnrichedToken) => {
@@ -28,18 +27,10 @@ export const useSwapForm = () => {
       ...prev,
       fromToken: prev.toToken,
       toToken: prev.fromToken,
-      fromAmount: prev.toAmount,
-      toAmount: prev.fromAmount,
+      fromAmount: '',
     }));
   };
 
-  const resetAmounts = () => {
-    setFormData(prev => ({
-      ...prev,
-      fromAmount: '',
-      toAmount: '',
-    }));
-  };
 
   const setTokens = (fromToken: EnrichedToken, toToken: EnrichedToken) => {
     setFormData(prev => ({
@@ -49,44 +40,21 @@ export const useSwapForm = () => {
     }));
   };
 
-  const validateForm = (): string | null => {
-    if (!formData.fromToken) return 'Please select a token to swap from';
-    if (!formData.toToken) return 'Please select a token to swap to';
-    
-    // Validate amount using precision validation
-    const amountValidation = validateAmount(
-      formData.fromAmount,
-      formData.fromToken.decimals || 18
-    );
-    
-    if (!amountValidation.isValid) {
-      return amountValidation.error || 'Invalid amount';
-    }
-    
-    if (!formData.fromAmount || formData.fromAmount === '0' || formData.fromAmount === '') {
-      return 'Please enter a valid amount';
-    }
-    
-    if (formData.fromToken.currency === formData.toToken.currency) {
-      return 'Cannot swap the same token';
-    }
-    
-    return null;
-  };
 
-  const handleAmountChange = (value: string): string => {
+  const handleAmountChange = (value: string) => {
     // Use precision library for input sanitization
-    const decimals = formData.fromToken?.decimals || 18;
-    return sanitizeAmountInput(value, decimals);
+    const decimals = formData.fromToken?.decimals || DEFAULT_DECIMALS;
+    const sanitizedValue = sanitizeAmountInput(value, decimals);
+    updateFromAmount(sanitizedValue);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const currentValue = parseFloat(formData.fromAmount) || 0;
     let newValue = currentValue;
-    
+
     // Define increment values based on current amount
     const increment = currentValue >= 100 ? 10 : currentValue >= 10 ? 1 : 0.1;
-    
+
     if (e.key === 'ArrowUp') {
       e.preventDefault();
       newValue = currentValue + increment;
@@ -96,11 +64,20 @@ export const useSwapForm = () => {
     } else {
       return;
     }
-    
+
     // Format to appropriate decimal places
     const decimals = increment < 1 ? 1 : 0;
     updateFromAmount(newValue.toFixed(decimals));
   };
+
+  const isValid =
+    formData.fromToken !== null &&
+    formData.toToken !== null &&
+    formData.fromAmount !== '' &&
+    formData.fromAmount !== '0' &&
+    formData.fromToken.currency !== formData.toToken.currency &&
+    formData.fromToken.price > 0 &&
+    formData.toToken.price > 0;
 
   return {
     formData,
@@ -108,11 +85,9 @@ export const useSwapForm = () => {
     updateToToken,
     updateFromAmount,
     swapTokens,
-    resetAmounts,
     setTokens,
-    validateForm,
     handleAmountChange,
     handleKeyDown,
-    isValid: !validateForm(),
+    isValid,
   };
 };

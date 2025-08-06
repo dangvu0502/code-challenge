@@ -13,7 +13,6 @@ export interface SwapFormData {
   fromToken: EnrichedToken | null;
   toToken: EnrichedToken | null;
   fromAmount: string;
-  toAmount: string;
 }
 
 export interface SwapQuote {
@@ -23,4 +22,11 @@ export interface SwapQuote {
   toAmount: string;
   exchangeRate: number;
   priceImpact?: number;
+}
+
+export interface SwapTransaction {
+  fromToken: EnrichedToken;
+  toToken: EnrichedToken;
+  fromAmount: string;
+  toAmount: string;
 }
